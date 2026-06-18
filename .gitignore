@@ -1,0 +1,30 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+*.DotSettings.user
+
+## IDE
+.idea/
+*.swp
+*~
+
+## Logs
+logs/
+*.log
+
+## Uploads
+uploads/
+
+## Environment
+.env
+.env.*
+appsettings.*.local.json
+
+## OS
+.DS_Store
+Thumbs.db

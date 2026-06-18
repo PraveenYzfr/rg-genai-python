@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="GenAI.AI/GenAI.AI.csproj" />
+  <Project Path="GenAI.Api/GenAI.Api.csproj" />
+  <Project Path="GenAI.Application/GenAI.Application.csproj" />
+  <Project Path="GenAI.Domain/GenAI.Domain.csproj" />
+  <Project Path="GenAI.Infrastructure/GenAI.Infrastructure.csproj" />
+  <Project Path="GenAI.RAG/GenAI.RAG.csproj" />
+</Solution>
