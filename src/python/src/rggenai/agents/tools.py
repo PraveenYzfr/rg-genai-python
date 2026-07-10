@@ -8,13 +8,19 @@ from rggenai.rag.service import RagService
 
 
 def create_rag_tools(rag_service: RagService | None = None) -> list:
-    service = rag_service or RagService()
+    _service = rag_service
+
+    def _get_service() -> RagService:
+        nonlocal _service
+        if _service is None:
+            _service = RagService()
+        return _service
 
     @tool
     def search_knowledge_base(query: str) -> str:
         """Search the document knowledge base for relevant information.
         Use this when the user asks about uploaded documents or internal knowledge."""
-        result = service.retrieve(query)
+        result = _get_service().retrieve(query)
         if not result.documents:
             return "No relevant documents found."
         parts = []

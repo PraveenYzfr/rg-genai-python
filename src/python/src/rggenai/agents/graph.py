@@ -2,6 +2,7 @@
 
 from typing import Any, Literal
 
+import aiosqlite
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from langgraph.graph import END, StateGraph
@@ -36,13 +37,13 @@ class ResearchAgent:
         self.tool_node = ToolNode(self.tools)
         self._graph = None
         self._checkpointer: AsyncSqliteSaver | None = None
+        self._sqlite_conn: aiosqlite.Connection | None = None
 
     async def _ensure_checkpointer(self) -> AsyncSqliteSaver:
         if self._checkpointer is None:
             self.settings.checkpoint_db_path.parent.mkdir(parents=True, exist_ok=True)
-            self._checkpointer = AsyncSqliteSaver.from_conn_string(
-                str(self.settings.checkpoint_db_path)
-            )
+            self._sqlite_conn = await aiosqlite.connect(str(self.settings.checkpoint_db_path))
+            self._checkpointer = AsyncSqliteSaver(self._sqlite_conn)
             await self._checkpointer.setup()
         return self._checkpointer
 

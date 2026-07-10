@@ -29,6 +29,10 @@ from rggenai.rag.pipeline import RagPipeline
 from rggenai.rag.service import RagService
 from rggenai.rag.vectorstore import get_vector_store
 
+from rggenai.logging_config import get_logger
+
+logger = get_logger(__name__)
+
 router = APIRouter(prefix="/api")
 
 
@@ -167,6 +171,9 @@ async def run_agent(request: AgentRunRequest) -> AgentRunResponse:
         result = await agent.run(request.message, thread_id=request.thread_id)
     except ValueError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:
+        logger.exception("agent_run_failed", error=str(exc))
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     return AgentRunResponse(**result)
 
