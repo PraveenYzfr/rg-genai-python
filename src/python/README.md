@@ -17,8 +17,8 @@ State-of-the-art Python GenAI platform combining **RAG**, **LangChain**, **LangG
     └──────────┬──────────┘    └──────────┬──────────┘
                │                          │
     ┌──────────▼──────────────────────────▼──────────┐
-    │              LangChain + OpenAI                   │
-    │         (Chat, Embeddings, Tools)                 │
+    │         LangChain Multi-Provider LLM            │
+    │  OpenAI | Groq | Gemini | Ollama (switchable)   │
     └──────────────────────────────────────────────────┘
                │
     ┌──────────▼──────────┐
@@ -34,16 +34,78 @@ State-of-the-art Python GenAI platform combining **RAG**, **LangChain**, **LangG
 | API | FastAPI + Uvicorn + SSE streaming |
 | Agents | LangGraph (ReAct graph, SQLite checkpoints) |
 | Chains/Tools | LangChain (tools, prompts, embeddings) |
-| RAG | ChromaDB + OpenAI embeddings + PDF/text ingestion |
+| RAG | ChromaDB + multi-provider embeddings + PDF/text ingestion |
 | MCP | Official `mcp` SDK (stdio server + client utilities) |
-| LLM | OpenAI (gpt-4o-mini default, configurable) |
+| LLM | **OpenAI, Groq, Gemini, Ollama** — switch per request or via `.env` |
+
+## Multi-Provider LLM Support
+
+Switch providers globally in `.env` or per API request.
+
+| Provider | Cost | Speed | Get Key |
+|----------|------|-------|---------|
+| **OpenAI** | Paid | Fast | https://platform.openai.com/api-keys |
+| **Groq** | Free tier | Very fast | https://console.groq.com/keys |
+| **Gemini** | Free tier | Fast | https://aistudio.google.com/apikey |
+| **Ollama** | Free (local) | Depends on PC | No key — install https://ollama.com |
+
+### Configure in `.env`
+
+```bash
+# Global default
+DEFAULT_LLM_PROVIDER=groq        # openai | groq | gemini | ollama
+DEFAULT_EMBEDDING_PROVIDER=ollama
+
+# Add keys for providers you want (only need ONE to start)
+GROQ_API_KEY=gsk-your-key
+GOOGLE_API_KEY=AIza-your-key
+OPENAI_API_KEY=sk-your-key
+
+# Ollama (local, no key)
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=llama3.2
+OLLAMA_EMBEDDING_MODEL=nomic-embed-text
+```
+
+### Switch per request
+
+```bash
+# Use Groq for this query (free + fast)
+curl -X POST http://localhost:8000/api/rag/query \
+  -H "Content-Type: application/json" \
+  -d '{"question": "Summarize the docs", "provider": "groq"}'
+
+# Use Gemini for agent
+curl -X POST http://localhost:8000/api/agents/run \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Search knowledge base", "provider": "gemini"}'
+```
+
+### List available providers
+
+```bash
+curl http://localhost:8000/api/providers
+```
+
+### Ollama setup (100% free, local)
+
+```bash
+# Install Ollama, then pull models:
+ollama pull llama3.2
+ollama pull nomic-embed-text
+
+# In .env:
+DEFAULT_LLM_PROVIDER=ollama
+DEFAULT_EMBEDDING_PROVIDER=ollama
+OLLAMA_ENABLED=true
+```
 
 ## Quick Start (Local)
 
 ### Prerequisites
 
 - Python 3.11+
-- OpenAI API key
+- At least one LLM provider configured (Groq/Gemini/Ollama are free options)
 
 ### 1. Setup
 
@@ -55,10 +117,13 @@ chmod +x scripts/*.sh
 
 ### 2. Configure
 
-Edit `.env` and set your API key:
+Edit `.env` and configure at least one provider (see Multi-Provider section above).
 
+**Quickest free setup (Groq):**
 ```bash
-OPENAI_API_KEY=sk-your-actual-key
+DEFAULT_LLM_PROVIDER=groq
+GROQ_API_KEY=gsk-your-key
+DEFAULT_EMBEDDING_PROVIDER=ollama   # or openai/gemini for embeddings
 ```
 
 ### 3. Run API Server
@@ -150,6 +215,7 @@ API: http://localhost:8000 | Chroma: http://localhost:8001
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
+| GET | `/api/providers` | List LLM providers and availability |
 | GET | `/api/health` | Health check + component status |
 | POST | `/api/documents/upload` | Upload PDF/TXT/MD for RAG indexing |
 | POST | `/api/rag/search` | Similarity search with citations |
@@ -192,7 +258,12 @@ ruff format src/rggenai tests/       # Format
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `OPENAI_API_KEY` | — | **Required** for LLM/embeddings |
+| `DEFAULT_LLM_PROVIDER` | `openai` | Default chat provider: openai, groq, gemini, ollama |
+| `DEFAULT_EMBEDDING_PROVIDER` | `openai` | Embeddings provider (groq not supported) |
+| `OPENAI_API_KEY` | — | OpenAI key |
+| `GROQ_API_KEY` | — | Groq key (free, fast) |
+| `GOOGLE_API_KEY` | — | Gemini key (free tier) |
+| `OLLAMA_BASE_URL` | `http://localhost:11434` | Local Ollama URL (free) |
 | `OPENAI_MODEL` | `gpt-4o-mini` | Chat model |
 | `OPENAI_EMBEDDING_MODEL` | `text-embedding-3-small` | Embedding model |
 | `CHROMA_PERSIST_DIR` | `./data/chroma` | Local vector store path |

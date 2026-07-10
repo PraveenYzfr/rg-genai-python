@@ -72,7 +72,13 @@ class TestSchemas:
     def test_health_response(self) -> None:
         from rggenai.api.schemas import HealthResponse
 
-        resp = HealthResponse(status="healthy", version="0.1.0", components={})
+        resp = HealthResponse(
+            status="healthy",
+            version="0.1.0",
+            components={},
+            default_llm_provider="openai",
+            default_embedding_provider="openai",
+        )
         assert resp.status == "healthy"
 
     def test_agent_run_request_defaults(self) -> None:

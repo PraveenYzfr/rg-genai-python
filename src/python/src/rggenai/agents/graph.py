@@ -1,6 +1,5 @@
 """LangGraph ReAct agent with RAG tools and checkpointing."""
 
-from functools import lru_cache
 from typing import Any, Literal
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
@@ -12,6 +11,7 @@ from rggenai.agents.state import AgentState
 from rggenai.agents.tools import create_rag_tools
 from rggenai.config import get_settings
 from rggenai.llm.factory import get_llm_factory
+from rggenai.llm.providers import resolve_chat_provider
 from rggenai.logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -28,10 +28,11 @@ class ResearchAgent:
 
     MAX_ITERATIONS = 8
 
-    def __init__(self) -> None:
+    def __init__(self, provider: str | None = None) -> None:
         self.settings = get_settings()
+        self.provider = provider
         self.tools = create_rag_tools()
-        self.llm = get_llm_factory().create_chat_model().bind_tools(self.tools)
+        self.llm = get_llm_factory().create_chat_model(provider=provider).bind_tools(self.tools)
         self.tool_node = ToolNode(self.tools)
         self._graph = None
         self._checkpointer: AsyncSqliteSaver | None = None
@@ -133,6 +134,7 @@ class ResearchAgent:
             "answer": final or "No response generated.",
             "steps": steps,
             "iterations": result.get("iteration", 0),
+            "provider": resolve_chat_provider(self.settings, self.provider).value,
         }
 
     async def stream(
@@ -168,6 +170,5 @@ class ResearchAgent:
                 }
 
 
-@lru_cache
-def get_research_agent() -> ResearchAgent:
-    return ResearchAgent()
+def get_research_agent(provider: str | None = None) -> ResearchAgent:
+    return ResearchAgent(provider=provider)

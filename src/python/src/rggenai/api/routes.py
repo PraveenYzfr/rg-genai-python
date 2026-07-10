@@ -13,12 +13,18 @@ from rggenai.api.schemas import (
     AgentRunResponse,
     DocumentUploadResponse,
     HealthResponse,
+    ProviderInfo,
+    ProvidersResponse,
     RagQueryRequest,
     RagQueryResponse,
     RagSearchRequest,
     RagSearchResponse,
 )
 from rggenai.config import get_settings
+from rggenai.llm.providers import (
+    list_provider_status,
+    resolve_chat_provider,
+)
 from rggenai.rag.pipeline import RagPipeline
 from rggenai.rag.service import RagService
 from rggenai.rag.vectorstore import get_vector_store
@@ -37,18 +43,47 @@ def _get_rag_pipeline() -> RagPipeline:
 @router.get("/health", response_model=HealthResponse)
 async def health() -> HealthResponse:
     settings = get_settings()
-    components: dict[str, str] = {
-        "llm": "configured" if settings.openai_api_key else "missing_api_key",
-        "vector_store": "unknown",
-    }
+    components: dict[str, str] = {"vector_store": "unknown"}
+
     try:
         count = get_vector_store().document_count()
         components["vector_store"] = f"ok ({count} chunks)"
     except Exception as exc:
         components["vector_store"] = f"error: {exc}"
 
-    status = "healthy" if settings.openai_api_key else "degraded"
-    return HealthResponse(status=status, version=__version__, components=components)
+    for provider_info in list_provider_status(settings):
+        pid = provider_info["id"]
+        chat = "ready" if provider_info["chat_available"] else "not configured"
+        embed = "ready" if provider_info["embeddings_available"] else "not configured"
+        components[f"llm_{pid}"] = f"chat: {chat}, embeddings: {embed}"
+
+    try:
+        resolve_chat_provider(settings)
+        status = "healthy"
+    except ValueError:
+        status = "degraded"
+
+    return HealthResponse(
+        status=status,
+        version=__version__,
+        components=components,
+        default_llm_provider=settings.default_llm_provider,
+        default_embedding_provider=settings.default_embedding_provider,
+    )
+
+
+@router.get("/providers", response_model=ProvidersResponse)
+async def list_providers() -> ProvidersResponse:
+    settings = get_settings()
+    providers = [ProviderInfo(**p) for p in list_provider_status(settings)]
+    return ProvidersResponse(
+        providers=providers,
+        usage_hint=(
+            "Set DEFAULT_LLM_PROVIDER in .env to switch globally, "
+            "or pass 'provider' in /api/rag/query and /api/agents/run requests. "
+            "Free options: groq (fast), gemini (free tier), ollama (local)."
+        ),
+    )
 
 
 @router.post("/documents/upload", response_model=DocumentUploadResponse)
@@ -98,8 +133,14 @@ async def rag_search(request: RagSearchRequest) -> RagSearchResponse:
 
 @router.post("/rag/query", response_model=RagQueryResponse)
 async def rag_query(request: RagQueryRequest) -> RagQueryResponse:
+    settings = get_settings()
     try:
-        result = await _get_rag_service().query(request.question, top_k=request.top_k)
+        result = await _get_rag_service().query(
+            request.question,
+            top_k=request.top_k,
+            provider=request.provider,
+        )
+        used_provider = resolve_chat_provider(settings, request.provider).value
     except ValueError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
@@ -115,13 +156,14 @@ async def rag_query(request: RagQueryRequest) -> RagQueryResponse:
             for c in result.citations
         ],
         chunks_retrieved=result.chunks_retrieved,
+        provider=used_provider,
     )
 
 
 @router.post("/agents/run", response_model=AgentRunResponse)
 async def run_agent(request: AgentRunRequest) -> AgentRunResponse:
     try:
-        agent = get_research_agent()
+        agent = get_research_agent(provider=request.provider)
         result = await agent.run(request.message, thread_id=request.thread_id)
     except ValueError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
@@ -131,7 +173,7 @@ async def run_agent(request: AgentRunRequest) -> AgentRunResponse:
 
 @router.post("/agents/stream")
 async def stream_agent(request: AgentRunRequest):
-    agent = get_research_agent()
+    agent = get_research_agent(provider=request.provider)
 
     async def event_generator() -> AsyncGenerator[dict, None]:
         try:

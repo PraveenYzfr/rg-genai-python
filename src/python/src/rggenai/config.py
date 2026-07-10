@@ -14,16 +14,33 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    # LLM
+    # Provider selection (openai | groq | gemini | ollama)
+    default_llm_provider: str = Field(default="openai", alias="DEFAULT_LLM_PROVIDER")
+    default_embedding_provider: str = Field(default="openai", alias="DEFAULT_EMBEDDING_PROVIDER")
+
+    # OpenAI
     openai_api_key: str = Field(default="", alias="OPENAI_API_KEY")
     openai_model: str = Field(default="gpt-4o-mini", alias="OPENAI_MODEL")
     openai_embedding_model: str = Field(
         default="text-embedding-3-small", alias="OPENAI_EMBEDDING_MODEL"
     )
-    anthropic_api_key: str = Field(default="", alias="ANTHROPIC_API_KEY")
-    anthropic_model: str = Field(
-        default="claude-3-5-sonnet-20241022", alias="ANTHROPIC_MODEL"
+
+    # Groq (free tier, very fast)
+    groq_api_key: str = Field(default="", alias="GROQ_API_KEY")
+    groq_model: str = Field(default="llama-3.3-70b-versatile", alias="GROQ_MODEL")
+
+    # Google Gemini (free tier)
+    google_api_key: str = Field(default="", alias="GOOGLE_API_KEY")
+    gemini_model: str = Field(default="gemini-2.0-flash", alias="GEMINI_MODEL")
+    gemini_embedding_model: str = Field(
+        default="models/text-embedding-004", alias="GEMINI_EMBEDDING_MODEL"
     )
+
+    # Ollama (local, free)
+    ollama_enabled: bool = Field(default=False, alias="OLLAMA_ENABLED")
+    ollama_base_url: str = Field(default="http://localhost:11434", alias="OLLAMA_BASE_URL")
+    ollama_model: str = Field(default="llama3.2", alias="OLLAMA_MODEL")
+    ollama_embedding_model: str = Field(default="nomic-embed-text", alias="OLLAMA_EMBEDDING_MODEL")
 
     # RAG
     chroma_persist_dir: Path = Field(

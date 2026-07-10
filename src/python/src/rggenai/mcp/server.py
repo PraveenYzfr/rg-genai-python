@@ -42,13 +42,20 @@ async def list_tools() -> list[Tool]:
         ),
         Tool(
             name="rag_query",
-            description="Ask a question and get an LLM-generated answer grounded in the knowledge base.",
+            description=(
+                "Ask a question and get an LLM-generated answer grounded in the knowledge base."
+            ),
             inputSchema={
                 "type": "object",
                 "properties": {
                     "question": {
                         "type": "string",
                         "description": "Question to answer using RAG",
+                    },
+                    "provider": {
+                        "type": "string",
+                        "description": "LLM provider: openai, groq, gemini, or ollama",
+                        "enum": ["openai", "groq", "gemini", "ollama"],
                     },
                 },
                 "required": ["question"],
@@ -68,6 +75,11 @@ async def list_tools() -> list[Tool]:
                         "type": "string",
                         "description": "Conversation thread ID for checkpointing",
                         "default": "mcp-default",
+                    },
+                    "provider": {
+                        "type": "string",
+                        "description": "LLM provider: openai, groq, gemini, or ollama",
+                        "enum": ["openai", "groq", "gemini", "ollama"],
                     },
                 },
                 "required": ["message"],
@@ -93,7 +105,8 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
 
     if name == "rag_query":
         question = arguments["question"]
-        result = await _get_rag_service().query(question)
+        provider = arguments.get("provider")
+        result = await _get_rag_service().query(question, provider=provider)
         lines = [
             f"Question: {result.query}",
             f"Answer: {result.answer}",
@@ -107,10 +120,12 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
     if name == "agent_run":
         message = arguments["message"]
         thread_id = arguments.get("thread_id", "mcp-default")
-        agent = get_research_agent()
+        provider = arguments.get("provider")
+        agent = get_research_agent(provider=provider)
         result = await agent.run(message, thread_id=thread_id)
         lines = [
             f"Thread: {result['thread_id']}",
+            f"Provider: {result.get('provider', 'unknown')}",
             f"Iterations: {result['iterations']}",
             f"Answer: {result['answer']}",
             "",

@@ -81,7 +81,12 @@ class RagService:
             parts.append(f"[{i}] (source: {source})\n{doc.page_content}")
         return "\n\n".join(parts)
 
-    async def query(self, question: str, top_k: int | None = None) -> RagSearchResult:
+    async def query(
+        self,
+        question: str,
+        top_k: int | None = None,
+        provider: str | None = None,
+    ) -> RagSearchResult:
         context_result = self.retrieve(question, top_k=top_k)
         if not context_result.documents:
             return RagSearchResult(
@@ -92,7 +97,7 @@ class RagService:
             )
 
         context = self._format_context(context_result.documents)
-        llm = self.llm_factory.create_chat_model()
+        llm = self.llm_factory.create_chat_model(provider=provider)
         messages = self._prompt.format_messages(context=context, question=question)
         response = await llm.ainvoke(messages)
 
@@ -103,7 +108,12 @@ class RagService:
             chunks_retrieved=len(context_result.documents),
         )
 
-    def query_sync(self, question: str, top_k: int | None = None) -> RagSearchResult:
+    def query_sync(
+        self,
+        question: str,
+        top_k: int | None = None,
+        provider: str | None = None,
+    ) -> RagSearchResult:
         context_result = self.retrieve(question, top_k=top_k)
         if not context_result.documents:
             return RagSearchResult(
@@ -114,7 +124,7 @@ class RagService:
             )
 
         context = self._format_context(context_result.documents)
-        llm = self.llm_factory.create_chat_model()
+        llm = self.llm_factory.create_chat_model(provider=provider)
         messages = self._prompt.format_messages(context=context, question=question)
         response = llm.invoke(messages)
 
