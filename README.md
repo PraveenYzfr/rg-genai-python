@@ -1,22 +1,30 @@
 # rgGenAI — Enterprise GenAI Platform
 
-Production-grade .NET 9 GenAI platform with multi-LLM support, RAG (pgvector), and Semantic Kernel agents.
+Production-grade GenAI platform with multi-LLM support, RAG, agents, and MCP integration.
 
-## Stack
+## Stacks
 
-- .NET 9 Web API (Clean Architecture)
-- Semantic Kernel
-- PostgreSQL + pgvector
+### Python (recommended for AI/RAG/agents)
+
+- FastAPI + LangChain + LangGraph + MCP
+- ChromaDB vector store, OpenAI embeddings
+- ReAct agent with tool calling and conversation checkpoints
+
+```bash
+cd src/python
+./scripts/setup.sh
+# Edit .env → set OPENAI_API_KEY
+source .venv/bin/activate
+rggenai-api
+```
+
+See [src/python/README.md](src/python/README.md) for full docs.
+
+### .NET 9 (enterprise API)
+
+- Clean Architecture Web API
+- Semantic Kernel, PostgreSQL + pgvector
 - OpenAI, Claude, Gemini
-
-## Features
-
-- Multi-model chat with streaming
-- RAG: PDF upload, chunking, embeddings, similarity search, citations
-- Agent framework with tool calling
-- Release Coordinator Agent (Jira → summary → ServiceNow CR)
-
-## Quick Start
 
 ```bash
 cd src/backend
@@ -24,34 +32,24 @@ dotnet restore GenAI.slnx
 dotnet run --project GenAI.Api
 ```
 
-### Prerequisites
-
-- PostgreSQL with `CREATE EXTENSION vector;`
-- API keys in `GenAI.Api/appsettings.Development.json`
-
-### Key Endpoints
-
-| Endpoint | Description |
-|----------|-------------|
-| `GET /api/health` | Health check |
-| `POST /api/llm/complete` | LLM completion |
-| `POST /api/llm/stream` | SSE streaming |
-| `POST /api/documents/upload` | Upload PDF for RAG |
-| `POST /api/rag/search` | Similarity search |
-| `POST /api/agents/run` | Run agent |
-
-## Project Structure
+## Repository Structure
 
 ```
-src/backend/
-├── GenAI.Api/            # Web API host
-├── GenAI.Application/    # Use cases, interfaces
-├── GenAI.Domain/         # Entities
-├── GenAI.Infrastructure/ # EF Core, PostgreSQL, integrations
-├── GenAI.AI/             # LLM providers, agents, plugins
-└── GenAI.RAG/            # Document ingestion, embeddings, retrieval
+src/
+├── python/          # Python GenAI platform (RAG, LangGraph, MCP)
+└── backend/         # .NET 9 GenAI platform (Semantic Kernel)
 ```
+
+## Features
+
+- Multi-model chat with streaming
+- RAG: document upload, chunking, embeddings, similarity search, citations
+- LangGraph agent framework with tool calling
+- MCP server for Cursor / Claude Desktop integration
+- Release Coordinator Agent (.NET): Jira → summary → ServiceNow CR
 
 ## Configuration
 
-Set provider API keys under the `LLM` section in appsettings. Jira and ServiceNow use mock data by default (`UseMockData: true`).
+**Python:** Copy `src/python/.env.example` to `.env` and set `OPENAI_API_KEY`.
+
+**.NET:** Set provider API keys under the `LLM` section in appsettings. Jira and ServiceNow use mock data by default (`UseMockData: true`).

@@ -23,7 +23,21 @@ uploads/
 ## Environment
 .env
 .env.*
+!.env.example
 appsettings.*.local.json
+
+## Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+src/python/data/
+src/python/uploads/
 
 ## OS
 .DS_Store
