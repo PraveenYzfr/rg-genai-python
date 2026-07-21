@@ -1,6 +1,0 @@
-@GenAI.Api_HostAddress = http://localhost:5245
-
-GET {{GenAI.Api_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###

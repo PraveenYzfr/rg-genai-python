@@ -1,32 +1,4 @@
-## .NET
-bin/
-obj/
-*.user
-*.suo
-*.userosscache
-*.sln.docstates
-.vs/
-*.DotSettings.user
-
-## IDE
-.idea/
-*.swp
-*~
-
-## Logs
-logs/
-*.log
-
-## Uploads
-uploads/
-
-## Environment
-.env
-.env.*
-!.env.example
-appsettings.*.local.json
-
-## Python
+# Python
 .venv/
 __pycache__/
 *.py[cod]
@@ -36,9 +8,24 @@ __pycache__/
 .ruff_cache/
 htmlcov/
 .coverage
-src/python/data/
-src/python/uploads/
+data/
+uploads/
 
-## OS
+# Environment
+.env
+.env.*
+!.env.example
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*~
+
+# Logs
+logs/
+*.log
+
+# OS
 .DS_Store
 Thumbs.db
